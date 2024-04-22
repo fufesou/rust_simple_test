@@ -193,12 +193,16 @@ pub unsafe fn install_driver(
         std::mem::transmute(function_ptr)
     };
 
+    println!("setup_di_call_class_installer: 1");
+
     if setup_di_call_class_installer(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
         return Err(DeviceError::WinApiLastErr(
             "SetupDiCallClassInstaller".to_string(),
             io::Error::last_os_error(),
         ));
     }
+
+    println!("setup_di_call_class_installer: 2");
 
     let mut reboot_required_ = FALSE;
     if UpdateDriverForPlugAndPlayDevicesW(
@@ -214,6 +218,7 @@ pub unsafe fn install_driver(
             io::Error::last_os_error(),
         ));
     }
+    println!("UpdateDriverForPlugAndPlayDevicesW: 2");
     *reboot_required = reboot_required_ == TRUE;
 
     Ok(())

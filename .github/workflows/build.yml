@@ -42,11 +42,11 @@ jobs:
       - name: Build
         run: |
           cargo build --target ${{ matrix.job.target }}
-          mkdir -p debug
-          mv ./target/${{ matrix.job.target }}/debug/simple_test.exe ./target/${{ matrix.job.target }}/debug/simple_test.pdb ./debug
-          mv debug ./simple_test-${{ matrix.job.arch }}
-          zip -r simple_test-${{ matrix.job.arch }}.zip ./simple_test-${{ matrix.job.arch }}
-          sha256sum simple_test-${{ matrix.job.arch }}.zip > simple_test-${{ matrix.job.arch }}.sha256
+          mkdir -p ./simple_test-debug-win-${{ matrix.job.arch }}
+          mv ./target/${{ matrix.job.target }}/debug/simple_test.exe ./simple_test-debug-win-${{ matrix.job.arch }}
+          mv ./target/${{ matrix.job.target }}/debug/simple_test.pdb ./simple_test-debug-win-${{ matrix.job.arch }}
+          Compress-Archive -Path ./simple_test-debug-win-${{ matrix.job.arch }} -DestinationPath simple_test-debug-win-${{ matrix.job.arch }}.zip
+          sha256sum simple_test-debug-win-${{ matrix.job.arch }}.zip > simple_test-debug-win-${{ matrix.job.arch }}.sha256
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
@@ -54,5 +54,5 @@ jobs:
           name: test ci
           tag_name: build_ci
           files: |
-            ./simple_test-${{ matrix.job.arch }}.zip
-            ./simple_test-${{ matrix.job.arch }}.sha256
+            ./simple_test-debug-win-${{ matrix.job.arch }}.zip
+            ./simple_test-debug-win-${{ matrix.job.arch }}.sha256
