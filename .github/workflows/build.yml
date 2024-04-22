@@ -47,6 +47,6 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
+          name: test ci
           files: |
             ./src/main.rs
