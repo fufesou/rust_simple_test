@@ -193,7 +193,7 @@ pub unsafe fn install_driver(
         std::mem::transmute(function_ptr)
     };
 
-    println!("setup_di_call_class_installer: 1");
+    println!("setup_di_call_class_installer: 1, {:p}", setup_di_call_class_installer);
 
     if setup_di_call_class_installer(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
         return Err(DeviceError::WinApiLastErr(
