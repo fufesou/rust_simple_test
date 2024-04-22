@@ -1,0 +1,52 @@
+name: Rust
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_VERSION: "1.75" # https://github.com/rustdesk/rustdesk/discussions/7503
+  LLVM_VERSION: "15.0.6"
+
+jobs:
+  windows:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    # Temporarily disable this action due to additional test is needed.
+    # if: false
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: x86_64-pc-windows-msvc, os: windows-2022, arch: x86_64 }
+          - { target: i686-pc-windows-msvc, os: windows-2022, arch: x86 }
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      # - name: Install LLVM and Clang
+      #   uses: rustdesk-org/install-llvm-action-32bit@master
+      #   with:
+      #     version: ${{ env.LLVM_VERSION }}
+
+      # - name: Install Rust toolchain
+      #   uses: dtolnay/rust-toolchain@v1
+      #   with:
+      #     toolchain: nightly-2023-10-13-${{ matrix.job.target }} # must use nightly here, because of abi_thiscall feature required
+      #     targets: ${{ matrix.job.target }}
+      #     components: "rustfmt"
+
+      # - name: Build
+      #   run: |
+      #     cargo build --release --target ${{ matrix.job.target }}
+      #     mv ./target/${{ matrix.job.target }}/release/simple_test.exe ./simple_test-${{ matrix.job.arch }}.exe
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          files: |
+            ./src/main.rs
