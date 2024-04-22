@@ -10,7 +10,7 @@ use winapi::{
     shared::{
         guiddef::{GUID, LPGUID},
         minwindef::{BOOL, DWORD, FALSE, HMODULE, MAX_PATH, PBOOL, PDWORD, TRUE},
-        ntdef::{HANDLE, LPCWSTR, NULL, PCWSTR, PWSTR},
+        ntdef::{HANDLE, LPCWSTR, NULL, PCWSTR, PVOID, PWSTR},
         windef::HWND,
         winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_NO_MORE_ITEMS},
     },
@@ -21,7 +21,7 @@ use winapi::{
         ioapiset::DeviceIoControl,
         libloaderapi::{GetProcAddress, LoadLibraryA},
         setupapi::*,
-        winnt::{GENERIC_READ, GENERIC_WRITE},
+        winnt::{GENERIC_READ, GENERIC_WRITE}, wow64apiset::{Wow64DisableWow64FsRedirection, Wow64RevertWow64FsRedirection},
     },
 };
 
@@ -712,9 +712,23 @@ unsafe fn open_device_handle(interface_guid: &GUID) -> Result<HANDLE, DeviceErro
 }
 
 fn main() {
+
+    let mut old_wow64_value: PVOID = null_mut();
+    unsafe {
+        if Wow64DisableWow64FsRedirection(&mut old_wow64_value) == FALSE {
+            println!("Failed to call Wow64DisableWow64FsRedirection, {:?}", io::Error::last_os_error());
+        }
+    }
+
     println!("Install driver: {:?}", unsafe {
-        install_driver_64(r#"D:\usbmmidd_v2\usbmmIdd.inf"#, "usbmmidd", &mut false)
+        install_driver(r#"D:\usbmmidd_v2\usbmmIdd.inf"#, "usbmmidd", &mut false)
     });
+
+    unsafe {
+        if Wow64RevertWow64FsRedirection(old_wow64_value) == FALSE {
+            println!("Failed to call Wow64RevertWow64FsRedirection, {:?}", io::Error::last_os_error());
+        }
+    }
 
     std::thread::sleep(std::time::Duration::from_secs(3));
 
