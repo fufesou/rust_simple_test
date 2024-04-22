@@ -9,8 +9,8 @@ use std::{
 use winapi::{
     shared::{
         guiddef::GUID,
-        minwindef::{BOOL, DWORD, FALSE, MAX_PATH, PBOOL, TRUE},
-        ntdef::{HANDLE, LPCWSTR, NULL, PVOID},
+        minwindef::{BOOL, DWORD, FALSE, HMODULE, MAX_PATH, PBOOL, TRUE},
+        ntdef::{HANDLE, LPCWSTR, NULL},
         windef::HWND,
         winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_NO_MORE_ITEMS},
     },
@@ -19,9 +19,9 @@ use winapi::{
         fileapi::{CreateFileW, OPEN_EXISTING},
         handleapi::{CloseHandle, INVALID_HANDLE_VALUE},
         ioapiset::DeviceIoControl,
+        libloaderapi::{GetProcAddress, LoadLibraryA},
         setupapi::*,
         winnt::{GENERIC_READ, GENERIC_WRITE},
-        wow64apiset::{Wow64DisableWow64FsRedirection, Wow64RevertWow64FsRedirection},
     },
 };
 
@@ -177,12 +177,32 @@ pub unsafe fn install_driver(
         ));
     }
 
-    if SetupDiCallClassInstaller(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
+    let setupapi: HMODULE =
+        unsafe { LoadLibraryA(b"C:\\Windows\\SysWOW64\\setupapi.dll\0".as_ptr() as _) };
+    if setupapi.is_null() {
+        return Err(DeviceError::Raw("Failed to load setupapi.dll".to_string()));
+    }
+    type FnSetupDiCallClassInstaller = fn(
+        InstallFunction: DI_FUNCTION,
+        DeviceInfoSet: HDEVINFO,
+        DeviceInfoData: PSP_DEVINFO_DATA,
+    ) -> BOOL;
+    let setup_di_call_class_installer: FnSetupDiCallClassInstaller = unsafe {
+        let function_name = b"SetupDiCallClassInstaller\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+
+    println!("setup_di_call_class_installer: 1");
+
+    if setup_di_call_class_installer(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
         return Err(DeviceError::WinApiLastErr(
             "SetupDiCallClassInstaller".to_string(),
             io::Error::last_os_error(),
         ));
     }
+
+    println!("setup_di_call_class_installer: 2");
 
     let mut reboot_required_ = FALSE;
     if UpdateDriverForPlugAndPlayDevicesW(
@@ -497,20 +517,9 @@ unsafe fn open_device_handle(interface_guid: &GUID) -> Result<HANDLE, DeviceErro
 }
 
 fn main() {
-    let mut old_value: PVOID = null_mut();
-    unsafe {
-        if Wow64DisableWow64FsRedirection(&mut old_value as _) == FALSE {
-            println!("Failed to call Wow64DisableWow64FsRedirection");
-        }
-    }
     println!("Install driver: {:?}", unsafe {
         install_driver(r#"D:\usbmmidd_v2\usbmmIdd.inf"#, "usbmmidd", &mut false)
     });
-    unsafe {
-        if Wow64RevertWow64FsRedirection(old_value as _) == FALSE {
-            println!("Failed to call Wow64RevertWow64FsRedirection");
-        }
-    }
 
     std::thread::sleep(std::time::Duration::from_secs(3));
 
