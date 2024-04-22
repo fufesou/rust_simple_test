@@ -8,9 +8,9 @@ use std::{
 };
 use winapi::{
     shared::{
-        guiddef::GUID,
-        minwindef::{BOOL, DWORD, FALSE, HMODULE, MAX_PATH, PBOOL, TRUE},
-        ntdef::{HANDLE, LPCWSTR, NULL},
+        guiddef::{GUID, LPGUID},
+        minwindef::{BOOL, DWORD, FALSE, HMODULE, MAX_PATH, PBOOL, PDWORD, TRUE},
+        ntdef::{HANDLE, LPCWSTR, NULL, PCWSTR, PWSTR},
         windef::HWND,
         winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_NO_MORE_ITEMS},
     },
@@ -177,11 +177,183 @@ pub unsafe fn install_driver(
         ));
     }
 
+    if SetupDiCallClassInstaller(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
+        return Err(DeviceError::WinApiLastErr(
+            "SetupDiCallClassInstaller".to_string(),
+            io::Error::last_os_error(),
+        ));
+    }
+
+    let mut reboot_required_ = FALSE;
+    if UpdateDriverForPlugAndPlayDevicesW(
+        null_mut(),
+        hardware_id.as_ptr(),
+        driver_inf_path.as_ptr(),
+        1,
+        &mut reboot_required_,
+    ) == FALSE
+    {
+        return Err(DeviceError::WinApiLastErr(
+            "UpdateDriverForPlugAndPlayDevicesW".to_string(),
+            io::Error::last_os_error(),
+        ));
+    }
+    println!("UpdateDriverForPlugAndPlayDevicesW: 2");
+    *reboot_required = reboot_required_ == TRUE;
+
+    Ok(())
+}
+
+pub unsafe fn install_driver_64(
+    inf_path: &str,
+    hardware_id: &str,
+    reboot_required: &mut bool,
+) -> Result<(), DeviceError> {
+    let driver_inf_path = OsStr::new(inf_path)
+        .encode_wide()
+        .chain(Some(0).into_iter())
+        .collect::<Vec<u16>>();
+    let hardware_id = OsStr::new(hardware_id)
+        .encode_wide()
+        .chain(Some(0).into_iter())
+        .collect::<Vec<u16>>();
+
     let setupapi: HMODULE =
-        unsafe { LoadLibraryA(b"C:\\Windows\\SysWOW64\\setupapi.dll\0".as_ptr() as _) };
+        unsafe { LoadLibraryA(b"C:\\Windows\\System32\\setupapi.dll\0".as_ptr() as _) };
     if setupapi.is_null() {
         return Err(DeviceError::Raw("Failed to load setupapi.dll".to_string()));
     }
+
+    type FnSetupDiGetINFClassW = fn(
+        InfName: PCWSTR,
+        ClassGuid: LPGUID,
+        ClassName: PWSTR,
+        ClassNameSize: DWORD,
+        RequiredSize: PDWORD,
+    ) -> BOOL;
+    let setup_di_get_inf_class_w: FnSetupDiGetINFClassW = unsafe {
+        let function_name = b"SetupDiGetINFClassW\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+
+    println!("setup_di_get_inf_class_w, {:p}", setup_di_get_inf_class_w);
+
+    let mut class_guid: GUID = std::mem::zeroed();
+    let mut class_name: [u16; 32] = [0; 32];
+
+    if setup_di_get_inf_class_w(
+        driver_inf_path.as_ptr(),
+        &mut class_guid,
+        class_name.as_mut_ptr(),
+        class_name.len() as _,
+        null_mut(),
+    ) == FALSE
+    {
+        return Err(DeviceError::WinApiLastErr(
+            "SetupDiGetINFClassW".to_string(),
+            io::Error::last_os_error(),
+        ));
+    }
+
+    // let dev_info = DeviceInfo::setup_di_create_device_info_list(&mut class_guid)?;
+
+    type FnSetupDiCreateDeviceInfoList = fn(ClassGuid: LPGUID, hwndParent: HWND) -> HDEVINFO;
+    let setup_di_create_device_info_list: FnSetupDiCreateDeviceInfoList = unsafe {
+        let function_name = b"SetupDiCreateDeviceInfoList\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+    println!(
+        "setup_di_create_device_info_list: 1, {:p}",
+        setup_di_create_device_info_list
+    );
+
+    let dev_info = {
+        let dev_info = { setup_di_create_device_info_list(&mut class_guid, null_mut()) };
+        if dev_info == null_mut() {
+            return Err(DeviceError::WinApiLastErr(
+                "SetupDiCreateDeviceInfoList".to_string(),
+                io::Error::last_os_error(),
+            ));
+        }
+        DeviceInfo(dev_info)
+    };
+
+    type FnSetupDiCreateDeviceInfoW = fn(
+        DeviceInfoSet: HDEVINFO,
+        DeviceName: PCWSTR,
+        ClassGuid: LPGUID,
+        DeviceDescription: PCWSTR,
+        hwndParent: HWND,
+        CreationFlags: DWORD,
+        DeviceInfoData: PSP_DEVINFO_DATA,
+    ) -> BOOL;
+
+    let setup_di_create_device_info_w: FnSetupDiCreateDeviceInfoW = unsafe {
+        let function_name = b"SetupDiCreateDeviceInfoW\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+    println!(
+        "setup_di_create_device_info_w: 1, {:p}",
+        setup_di_create_device_info_w
+    );
+
+    let mut dev_info_data = SP_DEVINFO_DATA {
+        cbSize: std::mem::size_of::<SP_DEVINFO_DATA>() as _,
+        ClassGuid: class_guid,
+        DevInst: 0,
+        Reserved: 0,
+    };
+    if setup_di_create_device_info_w(
+        *dev_info,
+        class_name.as_ptr(),
+        &mut class_guid,
+        null_mut(),
+        null_mut(),
+        DICD_GENERATE_ID,
+        &mut dev_info_data,
+    ) == FALSE
+    {
+        return Err(DeviceError::WinApiLastErr(
+            "SetupDiCreateDeviceInfoW".to_string(),
+            io::Error::last_os_error(),
+        ));
+    }
+
+    type FnSetupDiSetDeviceRegistryPropertyW = fn(
+        DeviceInfoSet: HDEVINFO,
+        DeviceInfoData: PSP_DEVINFO_DATA,
+        Property: DWORD,
+        PropertyBuffer: *const u16,
+        PropertyBufferSize: DWORD,
+    ) -> BOOL;
+
+    let setup_di_set_device_registry_property_w: FnSetupDiSetDeviceRegistryPropertyW = unsafe {
+        let function_name = b"SetupDiSetDeviceRegistryPropertyW\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+    println!(
+        "setup_di_set_device_registry_property_w: 1, {:p}",
+        setup_di_set_device_registry_property_w
+    );
+
+    if setup_di_set_device_registry_property_w(
+        *dev_info,
+        &mut dev_info_data,
+        SPDRP_HARDWAREID,
+        hardware_id.as_ptr() as _,
+        (hardware_id.len() * 2) as _,
+    ) == FALSE
+    {
+        return Err(DeviceError::WinApiLastErr(
+            "SetupDiSetDeviceRegistryPropertyW".to_string(),
+            io::Error::last_os_error(),
+        ));
+    }
+
     type FnSetupDiCallClassInstaller = fn(
         InstallFunction: DI_FUNCTION,
         DeviceInfoSet: HDEVINFO,
@@ -192,20 +364,43 @@ pub unsafe fn install_driver(
         let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
         std::mem::transmute(function_ptr)
     };
+    println!(
+        "setup_di_call_class_installer: 1, {:p}",
+        setup_di_call_class_installer
+    );
 
-    println!("setup_di_call_class_installer: 1, {:p}", setup_di_call_class_installer);
-
-    if setup_di_call_class_installer(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
+    if SetupDiCallClassInstaller(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
         return Err(DeviceError::WinApiLastErr(
             "SetupDiCallClassInstaller".to_string(),
             io::Error::last_os_error(),
         ));
     }
 
-    println!("setup_di_call_class_installer: 2");
+    let newdev: HMODULE =
+        unsafe { LoadLibraryA(b"C:\\Windows\\System32\\newdev.dll\0".as_ptr() as _) };
+    if newdev.is_null() {
+        return Err(DeviceError::Raw("Failed to load newdev.dll".to_string()));
+    }
+
+    type FnUpdateDriverForPlugAndPlayDevicesW = fn(
+        hwnd_parent: HWND,
+        hardware_id: LPCWSTR,
+        full_inf_path: LPCWSTR,
+        install_flags: DWORD,
+        b_reboot_required: PBOOL,
+    ) -> BOOL;
+    let update_driver_for_plug_and_play_devices_w: FnUpdateDriverForPlugAndPlayDevicesW = unsafe {
+        let function_name = b"UpdateDriverForPlugAndPlayDevicesW\0";
+        let function_ptr = GetProcAddress(newdev, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+    println!(
+        "update_driver_for_plug_and_play_devices_w: 1, {:p}",
+        update_driver_for_plug_and_play_devices_w
+    );
 
     let mut reboot_required_ = FALSE;
-    if UpdateDriverForPlugAndPlayDevicesW(
+    if update_driver_for_plug_and_play_devices_w(
         null_mut(),
         hardware_id.as_ptr(),
         driver_inf_path.as_ptr(),
@@ -518,7 +713,7 @@ unsafe fn open_device_handle(interface_guid: &GUID) -> Result<HANDLE, DeviceErro
 
 fn main() {
     println!("Install driver: {:?}", unsafe {
-        install_driver(r#"D:\usbmmidd_v2\usbmmIdd.inf"#, "usbmmidd", &mut false)
+        install_driver_64(r#"D:\usbmmidd_v2\usbmmIdd.inf"#, "usbmmidd", &mut false)
     });
 
     std::thread::sleep(std::time::Duration::from_secs(3));
