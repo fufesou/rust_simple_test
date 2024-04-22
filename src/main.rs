@@ -9,7 +9,7 @@ use std::{
 use winapi::{
     shared::{
         guiddef::GUID,
-        minwindef::{BOOL, DWORD, FALSE, MAX_PATH, PBOOL, TRUE},
+        minwindef::{BOOL, DWORD, FALSE, HMODULE, MAX_PATH, PBOOL, TRUE},
         ntdef::{HANDLE, LPCWSTR, NULL},
         windef::HWND,
         winerror::{ERROR_INSUFFICIENT_BUFFER, ERROR_NO_MORE_ITEMS},
@@ -19,6 +19,7 @@ use winapi::{
         fileapi::{CreateFileW, OPEN_EXISTING},
         handleapi::{CloseHandle, INVALID_HANDLE_VALUE},
         ioapiset::DeviceIoControl,
+        libloaderapi::{GetProcAddress, LoadLibraryA},
         setupapi::*,
         winnt::{GENERIC_READ, GENERIC_WRITE},
     },
@@ -176,7 +177,23 @@ pub unsafe fn install_driver(
         ));
     }
 
-    if SetupDiCallClassInstaller(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
+    let setupapi: HMODULE =
+        unsafe { LoadLibraryA(b"C:\\Windows\\System32\\setupapi.dll\0".as_ptr() as _) };
+    if setupapi.is_null() {
+        return Err(DeviceError::Raw("Failed to load setupapi.dll".to_string()));
+    }
+    type FnSetupDiCallClassInstaller = fn(
+        InstallFunction: DI_FUNCTION,
+        DeviceInfoSet: HDEVINFO,
+        DeviceInfoData: PSP_DEVINFO_DATA,
+    ) -> BOOL;
+    let setup_di_call_class_installer: FnSetupDiCallClassInstaller = unsafe {
+        let function_name = b"SetupDiCallClassInstaller\0";
+        let function_ptr = GetProcAddress(setupapi, function_name.as_ptr() as _);
+        std::mem::transmute(function_ptr)
+    };
+
+    if setup_di_call_class_installer(DIF_REGISTERDEVICE, *dev_info, &mut dev_info_data) == FALSE {
         return Err(DeviceError::WinApiLastErr(
             "SetupDiCallClassInstaller".to_string(),
             io::Error::last_os_error(),
