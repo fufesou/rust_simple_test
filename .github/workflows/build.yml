@@ -66,8 +66,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest, arch: x86_64 }
-          - { target: i686-unknown-linux-gnu, os: ubuntu-latest, arch: x86 }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-20.04, arch: x86_64 }
+          - { target: i686-unknown-linux-gnu, os: ubuntu-20.04, arch: x86 }
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
