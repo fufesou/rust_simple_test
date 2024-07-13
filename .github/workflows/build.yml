@@ -85,7 +85,6 @@ jobs:
           components: "rustfmt"
 
       - name: Setup libraries
-        if: ${{ matrix.job.arch == 'x86_64' }}
         run: |
           sudo apt-get update -y
           sudo apt-get install -y librust-alsa-sys-dev
@@ -93,7 +92,6 @@ jobs:
       - name: Build
         run: |
           cargo build --target ${{ matrix.job.target }}
-          mkdir -p ./simple_test-debug-linux-${{ matrix.job.arch }}
           mv ./target/${{ matrix.job.target }}/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
           sha256sum ./simple_test-debug-linux-${{ matrix.job.arch }} > simple_test-debug-linux-${{ matrix.job.arch }}.sha256
 
