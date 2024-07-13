@@ -56,3 +56,46 @@ jobs:
           files: |
             ./simple_test-debug-win-${{ matrix.job.arch }}.zip
             ./simple_test-debug-win-${{ matrix.job.arch }}.sha256
+
+  linux:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    # Temporarily disable this action due to additional test is needed.
+    # if: false
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-latest, arch: x86_64 }
+          - { target: i686-unknown-linux-gnu, os: ubuntu-latest, arch: x86 }
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Install LLVM and Clang
+        uses: rustdesk-org/install-llvm-action-32bit@master
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly-2023-10-13-${{ matrix.job.target }} # must use nightly here, because of abi_thiscall feature required
+          targets: ${{ matrix.job.target }}
+          components: "rustfmt"
+
+      - name: Build
+        run: |
+          cargo build --target ${{ matrix.job.target }}
+          mkdir -p ./simple_test-debug-linux-${{ matrix.job.arch }}
+          mv ./target/${{ matrix.job.target }}/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
+          sha256sum ./simple_test-debug-linux-${{ matrix.job.arch }} > simple_test-debug-linux-${{ matrix.job.arch }}.sha256
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: test ci
+          tag_name: build_ci
+          files: |
+            ./simple_test-debug-linux-${{ matrix.job.arch }}
+            ./simple_test-debug-linux-${{ matrix.job.arch }}.sha256

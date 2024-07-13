@@ -24,6 +24,7 @@ winapi = { version = "0.3", features = [
     "ioapiset",
     "wow64apiset",
 ] }
+cpal = "0.15.3"
 
 [dev-dependencies]
 crossbeam = "0.8.2"
