@@ -1,3 +1,5 @@
+use std::io::Read;
+
 use cpal::traits::{DeviceTrait, HostTrait};
 
 fn main() {
@@ -7,4 +9,6 @@ fn main() {
         "Default output device: {}",
         device.name().unwrap_or("".to_owned())
     );
+    println!("\nPress any key to exit...");
+    let _ = std::io::stdin().read(&mut [0u8]).unwrap();
 }
