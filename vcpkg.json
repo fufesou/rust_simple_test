@@ -6,6 +6,8 @@
     ],
     "vcpkg-configuration": {
       "default-registry": {
+        "kind": "builtin",
+        "baseline": "6f29f12e82a8293156836ad81cc9bf5af41fe836"
       }
     },
     "overrides": [
