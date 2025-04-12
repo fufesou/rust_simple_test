@@ -1,0 +1,19 @@
+{
+    "dependencies": [
+        {
+            "name": "aom",
+            "host": true
+        },
+        {
+            "name": "aom",
+            "host": false
+        }
+    ],
+    "vcpkg-configuration": {
+        "default-registry": {
+            "kind": "builtin",
+            "baseline": "f7423ee180c4b7f40d43402c2feb3859161ef625"
+        }
+    },
+    "overrides": []
+}
