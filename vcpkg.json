@@ -1,28 +1,7 @@
 {
     "dependencies": [
       {
-        "name": "ffmpeg",
-        "host": true,
-        "features": [
-          {
-            "name": "amf",
-            "platform": "((windows | linux) & static)"
-          },
-          {
-            "name": "nvcodec",
-            "platform": "((windows | linux) & static)"
-          },
-          {
-            "name": "qsv",
-            "platform": "(windows & static)"
-          }
-        ],
-        "platform": "((windows | (linux & !arm32) | osx) & static)"
-      },
-      {
-        "name": "ffmpeg",
-        "host": false,
-        "platform": "((android | ios | (linux & arm32)) & static)"
+        "name": "ffmpeg"
       }
     ],
     "vcpkg-configuration": {
