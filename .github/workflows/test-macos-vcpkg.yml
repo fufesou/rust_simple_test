@@ -42,11 +42,11 @@ jobs:
               brew install pkg-config
           fi
 
-          - name: Setup vcpkg with Github Actions binary cache
-          uses: lukka/run-vcpkg@v11
-          with:
-            vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
-            doNotCache: false
+      - name: Setup vcpkg with Github Actions binary cache
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
   
       - name: Install vcpkg dependencies
         run: |
