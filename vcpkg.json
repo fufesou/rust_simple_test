@@ -1,22 +1,6 @@
 {
     "dependencies": [
       {
-        "name": "libvpx",
-        "host": true
-      },
-      {
-        "name": "libvpx",
-        "host": false
-      },
-      {
-        "name": "libyuv",
-        "host": true
-      },
-      {
-        "name": "libyuv",
-        "host": false
-      },
-      {
         "name": "mfx-dispatch",
         "host": true,
         "platform": "((x86 | x64) & (android | linux)) | (windows & !uwp)"
@@ -61,14 +45,6 @@
       ]
     },
     "overrides": [
-      {
-        "name": "ffnvcodec",
-        "version": "12.1.14.0"
-      },
-      {
-        "name": "amd-amf",
-        "version": "1.4.35"
-      }
     ]
   }
   
