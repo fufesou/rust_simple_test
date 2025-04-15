@@ -25,6 +25,7 @@ winapi = { version = "0.3", features = [
     "wow64apiset",
 ] }
 cpal = "0.15.3"
+sysinfo = { git = "https://github.com/rustdesk-org/sysinfo", branch = "rlim_max" }
 
 [dev-dependencies]
 crossbeam = "0.8.2"
@@ -47,7 +48,6 @@ openidconnect = { git = "https://github.com/fufesou/openidconnect-rs", branch = 
 winreg = "0.11"
 hex = "0.4"
 backtrace = "0.3.69"
-sysinfo = "0.29.10"
 sqlx = { git = "https://github.com/rustdesk-org/sqlx", features = [
     "runtime-tokio-rustls",
     "macros",
