@@ -25,7 +25,8 @@ winapi = { version = "0.3", features = [
     "wow64apiset",
 ] }
 cpal = "0.15.3"
-sysinfo = { git = "https://github.com/rustdesk-org/sysinfo", branch = "rlim_max" }
+sysinfo = "0.34.2"
+# sysinfo = { git = "https://github.com/fufesou/sysinfo", branch = "test/win_cmdline" }
 
 [dev-dependencies]
 crossbeam = "0.8.2"

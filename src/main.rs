@@ -1,4 +1,4 @@
-use sysinfo::{Pid, System};
+use sysinfo::{Pid, ProcessesToUpdate, System};
 
 fn get_pids_of_process_with_args<S1: AsRef<str>, S2: AsRef<str>>(
     name: S1,
@@ -6,15 +6,19 @@ fn get_pids_of_process_with_args<S1: AsRef<str>, S2: AsRef<str>>(
 ) -> Vec<Pid> {
     let name = name.as_ref().to_lowercase();
     let mut system = System::new_all();
-    system.refresh_processes();
+    system.refresh_processes(ProcessesToUpdate::All, true);
     system
         .processes()
         .iter()
         .filter(|(_, process)| {
-            process.name().to_lowercase() == name
+            process.name().to_string_lossy().to_string().to_lowercase() == name
                 && process.cmd().len() == args.len() + 1
                 && args.iter().enumerate().all(|(i, arg)| {
-                    process.cmd()[i + 1].to_lowercase() == arg.as_ref().to_lowercase()
+                    process.cmd()[i + 1]
+                        .to_string_lossy()
+                        .to_string()
+                        .to_lowercase()
+                        == arg.as_ref().to_lowercase()
                 })
         })
         .map(|(&pid, _)| pid)
