@@ -33,6 +33,8 @@ winapi = { version = "0.3", features = [
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 cpal = "0.15.3"
+sysinfo = "0.34.2"
+# sysinfo = { git = "https://github.com/fufesou/sysinfo", branch = "test/win_cmdline" }
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
 winreg = "0.11"
