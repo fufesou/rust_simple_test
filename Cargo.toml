@@ -25,6 +25,7 @@ winapi = { version = "0.3", features = [
     "wow64apiset",
 ] }
 cpal = "0.15.3"
+rdev = { git = "https://github.com/rustdesk-org/rdev" }
 
 [dev-dependencies]
 crossbeam = "0.8.2"
