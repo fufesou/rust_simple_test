@@ -87,12 +87,14 @@ jobs:
       - name: Setup libraries
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y librust-alsa-sys-dev
+          sudo apt-get install -y librust-alsa-sys-dev libxi-dev libxtst-dev pkg-config
 
       - name: Build
         run: |
-          cargo build --target ${{ matrix.job.target }}
-          mv ./target/${{ matrix.job.target }}/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
+          # cargo build --target ${{ matrix.job.target }}
+          # mv ./target/${{ matrix.job.target }}/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
+          cargo build
+          mv ./target/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
           sha256sum ./simple_test-debug-linux-${{ matrix.job.arch }} > simple_test-debug-linux-${{ matrix.job.arch }}.sha256
 
       - name: Publish Release

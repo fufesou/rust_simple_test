@@ -28,6 +28,8 @@ winapi = { version = "0.3", features = [
     "wow64apiset",
 ] }
 
+[target.'cfg(target_os = "linux")'.dependencies]
+
 [target.'cfg(target_os = "macos")'.dependencies]
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
