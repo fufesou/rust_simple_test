@@ -1,19 +1,16 @@
 {
     "dependencies": [
-        {
-            "name": "aom",
-            "host": true
-        },
-        {
-            "name": "aom",
-            "host": false
-        }
+      {
+        "name": "ffmpeg"
+      }
     ],
     "vcpkg-configuration": {
-        "default-registry": {
-            "kind": "builtin",
-            "baseline": "f7423ee180c4b7f40d43402c2feb3859161ef625"
-        }
+      "default-registry": {
+        "kind": "builtin",
+        "baseline": "6f29f12e82a8293156836ad81cc9bf5af41fe836"
+      }
     },
-    "overrides": []
-}
+    "overrides": [
+    ]
+  }
+  

@@ -42,6 +42,16 @@ jobs:
               brew install pkg-config
           fi
 
+      - name: test build C
+        run: |
+          echo "Test build C"
+          echo '#include <stdio.h>
+            int main() {
+                printf("Hello World!\\n");
+                return 0;
+            }' > test.c
+          clang -fPIC -isysroot $(xcrun --show-sdk-path) -o test test.c
+
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@v11
         with:

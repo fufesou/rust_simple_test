@@ -1,3 +1,4 @@
+#[cfg(target_os = "windows")]
 use std::{
     ffi::OsStr,
     io,
@@ -6,6 +7,7 @@ use std::{
     ptr::null_mut,
     result::Result,
 };
+#[cfg(target_os = "windows")]
 use winapi::{
     shared::{
         guiddef::{GUID, LPGUID},
@@ -25,6 +27,7 @@ use winapi::{
     },
 };
 
+#[cfg(target_os = "windows")]
 #[link(name = "Newdev")]
 extern "system" {
     fn UpdateDriverForPlugAndPlayDevicesW(
@@ -36,6 +39,7 @@ extern "system" {
     ) -> BOOL;
 }
 
+#[cfg(target_os = "windows")]
 #[derive(thiserror::Error, Debug)]
 pub enum DeviceError {
     #[error("Failed to call {0}, {1:?}")]
@@ -46,8 +50,10 @@ pub enum DeviceError {
     Raw(String),
 }
 
+#[cfg(target_os = "windows")]
 struct DeviceInfo(HDEVINFO);
 
+#[cfg(target_os = "windows")]
 impl DeviceInfo {
     fn setup_di_create_device_info_list(class_guid: &mut GUID) -> Result<Self, DeviceError> {
         let dev_info = unsafe { SetupDiCreateDeviceInfoList(class_guid, null_mut()) };
@@ -86,6 +92,7 @@ impl DeviceInfo {
     }
 }
 
+#[cfg(target_os = "windows")]
 impl Drop for DeviceInfo {
     fn drop(&mut self) {
         unsafe {
@@ -94,6 +101,7 @@ impl Drop for DeviceInfo {
     }
 }
 
+#[cfg(target_os = "windows")]
 impl Deref for DeviceInfo {
     type Target = HDEVINFO;
 
@@ -102,12 +110,14 @@ impl Deref for DeviceInfo {
     }
 }
 
+#[cfg(target_os = "windows")]
 impl DerefMut for DeviceInfo {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
+#[cfg(target_os = "windows")]
 pub unsafe fn install_driver(
     inf_path: &str,
     hardware_id: &str,
@@ -204,6 +214,7 @@ pub unsafe fn install_driver(
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 pub unsafe fn install_driver_64(
     inf_path: &str,
     hardware_id: &str,
@@ -419,6 +430,7 @@ pub unsafe fn install_driver_64(
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 unsafe fn is_same_hardware_id(
     dev_info: &DeviceInfo,
     devinfo_data: &mut SP_DEVINFO_DATA,
@@ -447,6 +459,7 @@ unsafe fn is_same_hardware_id(
     Ok(cur_hardware_id == hardware_id)
 }
 
+#[cfg(target_os = "windows")]
 pub unsafe fn uninstall_driver(
     hardware_id: &str,
     reboot_required: &mut bool,
@@ -575,6 +588,7 @@ pub unsafe fn uninstall_driver(
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
 pub unsafe fn plug_monitor(interface_guid: &GUID, add: bool) -> Result<bool, DeviceError> {
     let h_device = match open_device_handle(interface_guid) {
         Ok(h) => h,
@@ -610,6 +624,7 @@ pub unsafe fn plug_monitor(interface_guid: &GUID, add: bool) -> Result<bool, Dev
     Ok(true)
 }
 
+#[cfg(target_os = "windows")]
 unsafe fn get_device_path(interface_guid: &GUID) -> Result<Vec<u16>, DeviceError> {
     let dev_info = DeviceInfo::setup_di_get_class_devs_ex_w(
         interface_guid,
@@ -690,6 +705,7 @@ unsafe fn get_device_path(interface_guid: &GUID) -> Result<Vec<u16>, DeviceError
     Ok(path)
 }
 
+#[cfg(target_os = "windows")]
 unsafe fn open_device_handle(interface_guid: &GUID) -> Result<HANDLE, DeviceError> {
     let device_path = get_device_path(interface_guid)?;
     println!("device_path: {:?}", String::from_utf16_lossy(&device_path));
@@ -711,6 +727,7 @@ unsafe fn open_device_handle(interface_guid: &GUID) -> Result<HANDLE, DeviceErro
     Ok(h_device)
 }
 
+#[cfg(target_os = "windows")]
 fn main() {
 
     let mut old_wow64_value: PVOID = null_mut();
@@ -755,4 +772,9 @@ fn main() {
     println!("Uninstall driver: {:?}", unsafe {
         uninstall_driver("usbmmidd", &mut false)
     });
+}
+
+#[cfg(not(target_os = "windows"))]
+fn main() {
+    println!("Only available on Windows OS.");
 }
