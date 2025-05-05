@@ -14,8 +14,8 @@ fn send(event_type: &EventType) {
 }
 
 fn main() {
-    let k_shift = Key::RawKey(rdev::RawKey::WinVirtualKeycode(50));
-    let k_r_bracket = Key::RawKey(rdev::RawKey::WinVirtualKeycode(34));
+    let k_shift = Key::RawKey(rdev::RawKey::LinuxXorgKeycode(50));
+    let k_r_bracket = Key::RawKey(rdev::RawKey::LinuxXorgKeycode(35));
     send(&EventType::KeyPress(k_shift.clone()));
     send(&EventType::KeyPress(k_r_bracket.clone()));
     send(&EventType::KeyRelease(k_r_bracket));
