@@ -8,7 +8,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_VERSION: "1.81"
+  RUST_VERSION: "1.84.1"
   LLVM_VERSION: "15.0.6"
 
 jobs:
