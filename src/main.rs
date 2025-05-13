@@ -1,23 +1,32 @@
-use rdev::{simulate, EventType, Key, SimulateError};
-use std::{thread, time};
-
-fn send(event_type: &EventType) {
-    let delay = time::Duration::from_millis(20);
-    match simulate(event_type) {
-        Ok(()) => (),
-        Err(SimulateError) => {
-            println!("We could not send {:?}", event_type);
-        }
-    }
-    // Let ths OS catchup (at least MacOS)
-    thread::sleep(delay);
-}
+use nokhwa::{
+    pixel_format::RgbAFormat,
+    query,
+    utils::{ApiBackend, RequestedFormat, RequestedFormatType},
+    Camera,
+};
 
 fn main() {
-    let k_shift = Key::RawKey(rdev::RawKey::LinuxXorgKeycode(50));
-    let k_r_bracket = Key::RawKey(rdev::RawKey::LinuxXorgKeycode(35));
-    send(&EventType::KeyPress(k_shift.clone()));
-    send(&EventType::KeyPress(k_r_bracket.clone()));
-    send(&EventType::KeyRelease(k_r_bracket));
-    send(&EventType::KeyRelease(k_shift));
+    match query(ApiBackend::Auto) {
+        Ok(cameras) => {
+            for camera in &cameras {
+                match Camera::new(
+                    camera.index().clone(),
+                    RequestedFormat::new::<RgbAFormat>(
+                        RequestedFormatType::AbsoluteHighestResolution,
+                    ),
+                ) {
+                    Ok(result) => {
+                        println!("Camera: {:?}, name: {}", camera, camera.human_name());
+                        println!("Resolution: {:?}", result.resolution());
+                    }
+                    Err(e) => {
+                        println!("Failed to create camera: {:?}", e);
+                    }
+                }
+            }
+        }
+        Err(e) => {
+            println!("Failed to query: {:?}", e);
+        }
+    }
 }

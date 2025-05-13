@@ -114,6 +114,8 @@ fn get_pids_with_first_arg_from_wmic_output(
     name: &str,
     arg: &str,
 ) -> Vec<sysinfo::Pid> {
+    use sysinfo::PidExt;
+
     let mut pids = Vec::new();
     let mut proc_found = false;
     for line in output.lines() {

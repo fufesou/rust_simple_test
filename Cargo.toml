@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0.59"
+thiserror = "2"
 log = "0.4.21"
-env_logger = "0.11.3"
-rdev = { git = "https://github.com/rustdesk-org/rdev" }
+env_logger = "0.11"
+nokhwa = { git = "https://github.com/rustdesk-org/nokhwa.git", branch = "fix_from_raw_parts", features = ["input-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = [
@@ -42,6 +42,7 @@ winreg = "0.11"
 sysinfo = "0.29.10"
 
 [dev-dependencies]
+rdev = { git = "https://github.com/rustdesk-org/rdev" }
 reqwest = { version = "0.11.20", features = ["json", "rustls-tls"] }
 # reqwest = { version = "0.11.20", features = ["json"] }
 tokio = { version = "1.37", features = ["full"] }
