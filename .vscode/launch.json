@@ -8,17 +8,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Debug executable 'simple_test'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=simple_test",
-                    "--package=simple_test"
-                ],
-                "filter": {
-                    "name": "simple_test",
-                    "kind": "bin"
-                }
-            },
+            "program": "${workspaceRoot}/target/i686-pc-windows-msvc/debug/simple_test.exe",
             "args": [],
             "cwd": "${workspaceFolder}"
         }

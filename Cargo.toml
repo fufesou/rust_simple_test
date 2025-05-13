@@ -9,7 +9,7 @@ edition = "2021"
 thiserror = "2"
 log = "0.4.21"
 env_logger = "0.11"
-nokhwa = { git = "https://github.com/rustdesk-org/nokhwa.git", branch = "fix_from_raw_parts", features = ["input-native"] }
+nokhwa = { path="../nokhwa", features = ["input-native"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = [
