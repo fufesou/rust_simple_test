@@ -6,10 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0"
 thiserror = "2"
 log = "0.4.21"
 env_logger = "0.11"
 nokhwa = { path="../nokhwa", features = ["input-native"] }
+tokio = { version = "1.44", features = ["full"] }
+tokio-util = { version = "0.7", features = ["full"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3", features = [
@@ -45,7 +48,6 @@ sysinfo = "0.29.10"
 rdev = { git = "https://github.com/rustdesk-org/rdev" }
 reqwest = { version = "0.11.20", features = ["json", "rustls-tls"] }
 # reqwest = { version = "0.11.20", features = ["json"] }
-tokio = { version = "1.37", features = ["full"] }
 structopt = { version = "0.3.26", features = ["wrap_help"] }
 lettre = { version = "0.10.4", default-features = false, features = [
     "tokio1-rustls-tls",
@@ -83,6 +85,21 @@ ldap3 = { version = "0.11", default-features = false, features = [
 lazy_static = "1.4.0"
 wol-rs = "1.0"
 default-net = "0.14"
+
+futures = "0.3"
+bytes = { version = "1.10", features = ["serde"] }
+tokio-native-tls = "0.3"
+tokio-rustls = { version = "0.26", features = [
+    "logging",
+    "tls12",
+    "ring",
+], default-features = false }
+tokio-tungstenite = { git = "https://github.com/fufesou/tokio-tungstenite", branch = "test/accept_danger", features = ["rustls-tls-native-roots", "rustls-tls-webpki-roots", "native-tls"] }
+tungstenite = { version = "0.26", features = ["rustls-tls-native-roots", "rustls-tls-webpki-roots", "native-tls"] }
+rustls-pki-types = { version = "1.0" }
+rustls-native-certs = "0.8"
+webpki-roots = "0.26"
+
 
 [profile.release]
 debug = true
