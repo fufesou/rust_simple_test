@@ -10,7 +10,7 @@ anyhow = "1.0"
 thiserror = "2"
 log = "0.4.21"
 env_logger = "0.11"
-nokhwa = { path="../nokhwa", features = ["input-native"] }
+nokhwa = { git = "https://github.com/rustdesk-org/nokhwa.git", branch = "fix_from_raw_parts", features = ["input-native"] }
 tokio = { version = "1.44", features = ["full"] }
 tokio-util = { version = "0.7", features = ["full"] }
 
