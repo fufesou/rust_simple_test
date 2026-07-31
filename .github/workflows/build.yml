@@ -20,7 +20,6 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   RUST_VERSION: "1.84.1"
-  LLVM_VERSION: "15.0.6"
   RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || inputs.tag || 'build_ci' }}
 
 jobs:
@@ -35,14 +34,10 @@ jobs:
         job:
           - { target: x86_64-pc-windows-msvc, os: windows-2022, arch: x86_64 }
           - { target: i686-pc-windows-msvc, os: windows-2022, arch: x86 }
+          - { target: aarch64-pc-windows-msvc, os: windows-11-arm, arch: aarch64 }
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3
-
-      - name: Install LLVM and Clang
-        uses: rustdesk-org/install-llvm-action-32bit@master
-        with:
-          version: ${{ env.LLVM_VERSION }}
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@v1
@@ -52,16 +47,19 @@ jobs:
           components: "rustfmt"
 
       - name: Build
+        shell: pwsh
         run: |
-          cargo build --target ${{ matrix.job.target }}
-          mkdir -p ./simple_test-debug-win-${{ matrix.job.arch }}
-          mv ./target/${{ matrix.job.target }}/debug/simple_test.exe ./simple_test-debug-win-${{ matrix.job.arch }}
-          mv ./target/${{ matrix.job.target }}/debug/simple_test.pdb ./simple_test-debug-win-${{ matrix.job.arch }}
-          Compress-Archive -Path ./simple_test-debug-win-${{ matrix.job.arch }} -DestinationPath simple_test-debug-win-${{ matrix.job.arch }}.zip
-          sha256sum simple_test-debug-win-${{ matrix.job.arch }}.zip > simple_test-debug-win-${{ matrix.job.arch }}.sha256
+          $packageName = "simple_test-debug-win-${{ matrix.job.arch }}"
+          cargo build --locked --target "${{ matrix.job.target }}"
+          New-Item -ItemType Directory -Path $packageName | Out-Null
+          Move-Item "./target/${{ matrix.job.target }}/debug/simple_test.exe" $packageName
+          Move-Item "./target/${{ matrix.job.target }}/debug/simple_test.pdb" $packageName
+          Compress-Archive -Path $packageName -DestinationPath "$packageName.zip"
+          $hash = (Get-FileHash "$packageName.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $packageName.zip" | Set-Content "$packageName.sha256" -Encoding ascii
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
@@ -79,15 +77,10 @@ jobs:
       matrix:
         job:
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64 }
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04, arch: aarch64 }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64 }
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3
-
-      - name: Install LLVM and Clang
-        uses: rustdesk-org/install-llvm-action-32bit@master
-        with:
-          version: ${{ env.LLVM_VERSION }}
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@v1
@@ -96,24 +89,58 @@ jobs:
           targets: ${{ matrix.job.target }}
           components: "rustfmt"
 
-      - name: Setup libraries
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y librust-alsa-sys-dev libxi-dev libxtst-dev pkg-config
-
       - name: Build
         run: |
-          # cargo build --target ${{ matrix.job.target }}
-          # mv ./target/${{ matrix.job.target }}/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
-          cargo build
-          mv ./target/debug/simple_test ./simple_test-debug-linux-${{ matrix.job.arch }}
-          sha256sum ./simple_test-debug-linux-${{ matrix.job.arch }} > simple_test-debug-linux-${{ matrix.job.arch }}.sha256
+          package_name="linux-${{ matrix.job.arch }}"
+          cargo build --locked --target "${{ matrix.job.target }}"
+          mkdir -p "$package_name"
+          mv "./target/${{ matrix.job.target }}/debug/simple_test" "$package_name/simple_test"
+          tar -czf "$package_name.tar.gz" "$package_name"
+          sha256sum "$package_name.tar.gz" > "$package_name.tar.gz.sha256"
 
       - name: Publish Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ./simple_test-debug-linux-${{ matrix.job.arch }}
-            ./simple_test-debug-linux-${{ matrix.job.arch }}.sha256
+            ./linux-${{ matrix.job.arch }}.tar.gz
+            ./linux-${{ matrix.job.arch }}.tar.gz.sha256
+
+  macos:
+    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    runs-on: ${{ matrix.job.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: aarch64-apple-darwin, os: macos-15, arch: aarch64 }
+          - { target: x86_64-apple-darwin, os: macos-15-intel, arch: x86_64 }
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+          targets: ${{ matrix.job.target }}
+          components: "rustfmt"
+
+      - name: Build
+        run: |
+          package_name="macos-${{ matrix.job.arch }}"
+          cargo build --locked --target "${{ matrix.job.target }}"
+          mkdir -p "$package_name"
+          mv "./target/${{ matrix.job.target }}/debug/simple_test" "$package_name/simple_test"
+          tar -czf "$package_name.tar.gz" "$package_name"
+          shasum -a 256 "$package_name.tar.gz" > "$package_name.tar.gz.sha256"
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: |
+            ./macos-${{ matrix.job.arch }}.tar.gz
+            ./macos-${{ matrix.job.arch }}.tar.gz.sha256
