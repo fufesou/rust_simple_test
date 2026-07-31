@@ -2,14 +2,26 @@ name: Rust
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
+        default: build_ci
+        type: string
   push:
     branches:
       - main
+    tags:
+      - "**"
+
+permissions:
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
   RUST_VERSION: "1.84.1"
   LLVM_VERSION: "15.0.6"
+  RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || inputs.tag || 'build_ci' }}
 
 jobs:
   windows:
@@ -51,8 +63,8 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
-          name: test ci
-          tag_name: build_ci
+          name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             ./simple_test-debug-win-${{ matrix.job.arch }}.zip
             ./simple_test-debug-win-${{ matrix.job.arch }}.sha256
@@ -100,8 +112,8 @@ jobs:
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
-          name: test ci
-          tag_name: build_ci
+          name: ${{ env.RELEASE_TAG }}
+          tag_name: ${{ env.RELEASE_TAG }}
           files: |
             ./simple_test-debug-linux-${{ matrix.job.arch }}
             ./simple_test-debug-linux-${{ matrix.job.arch }}.sha256
