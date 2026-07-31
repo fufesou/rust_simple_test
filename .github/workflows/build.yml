@@ -49,14 +49,17 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          $packageName = "simple_test-debug-win-${{ matrix.job.arch }}"
+          if ($env:RELEASE_TAG -notmatch '^[A-Za-z0-9._+-]+$') {
+            throw "Release tag is not safe for artifact filenames: $env:RELEASE_TAG"
+          }
+          $packageName = "$($env:RELEASE_TAG)-debug-win-${{ matrix.job.arch }}"
           cargo build --locked --target "${{ matrix.job.target }}"
           New-Item -ItemType Directory -Path $packageName | Out-Null
           Move-Item "./target/${{ matrix.job.target }}/debug/simple_test.exe" $packageName
           Move-Item "./target/${{ matrix.job.target }}/debug/simple_test.pdb" $packageName
           Compress-Archive -Path $packageName -DestinationPath "$packageName.zip"
           $hash = (Get-FileHash "$packageName.zip" -Algorithm SHA256).Hash.ToLowerInvariant()
-          "$hash  $packageName.zip" | Set-Content "$packageName.sha256" -Encoding ascii
+          "$hash  $packageName.zip" | Set-Content "$packageName.zip.sha256" -Encoding ascii
 
       - name: Publish Release
         uses: softprops/action-gh-release@v3
@@ -64,8 +67,8 @@ jobs:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ./simple_test-debug-win-${{ matrix.job.arch }}.zip
-            ./simple_test-debug-win-${{ matrix.job.arch }}.sha256
+            ./${{ env.RELEASE_TAG }}-debug-win-${{ matrix.job.arch }}.zip
+            ./${{ env.RELEASE_TAG }}-debug-win-${{ matrix.job.arch }}.zip.sha256
 
   linux:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
@@ -91,7 +94,11 @@ jobs:
 
       - name: Build
         run: |
-          package_name="linux-${{ matrix.job.arch }}"
+          if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+            echo "Release tag is not safe for artifact filenames: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          package_name="${RELEASE_TAG}-debug-linux-${{ matrix.job.arch }}"
           cargo build --locked --target "${{ matrix.job.target }}"
           mkdir -p "$package_name"
           mv "./target/${{ matrix.job.target }}/debug/simple_test" "$package_name/simple_test"
@@ -104,8 +111,8 @@ jobs:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ./linux-${{ matrix.job.arch }}.tar.gz
-            ./linux-${{ matrix.job.arch }}.tar.gz.sha256
+            ./${{ env.RELEASE_TAG }}-debug-linux-${{ matrix.job.arch }}.tar.gz
+            ./${{ env.RELEASE_TAG }}-debug-linux-${{ matrix.job.arch }}.tar.gz.sha256
 
   macos:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
@@ -129,7 +136,11 @@ jobs:
 
       - name: Build
         run: |
-          package_name="macos-${{ matrix.job.arch }}"
+          if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+            echo "Release tag is not safe for artifact filenames: $RELEASE_TAG" >&2
+            exit 1
+          fi
+          package_name="${RELEASE_TAG}-debug-macos-${{ matrix.job.arch }}"
           cargo build --locked --target "${{ matrix.job.target }}"
           mkdir -p "$package_name"
           mv "./target/${{ matrix.job.target }}/debug/simple_test" "$package_name/simple_test"
@@ -142,5 +153,5 @@ jobs:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ./macos-${{ matrix.job.arch }}.tar.gz
-            ./macos-${{ matrix.job.arch }}.tar.gz.sha256
+            ./${{ env.RELEASE_TAG }}-debug-macos-${{ matrix.job.arch }}.tar.gz
+            ./${{ env.RELEASE_TAG }}-debug-macos-${{ matrix.job.arch }}.tar.gz.sha256
