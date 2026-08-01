@@ -10,10 +10,11 @@ const DEFAULT_PASSWORD_ENV: &str = "LDAP_PASSWORD";
 const LDAP_PREFIX: &str = "ldap://";
 const LDAPS_PREFIX: &str = "ldaps://";
 const NO_ATTRIBUTES: &str = "1.1";
-
-#[cfg(any(target_os = "windows", target_os = "macos"))]
+#[cfg(not(any(feature = "native-tls", feature = "rustls")))]
+compile_error!("enable either the native-tls or rustls feature");
+#[cfg(feature = "native-tls")]
 const TLS_BACKEND: &str = "native-tls";
-#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+#[cfg(feature = "rustls")]
 const TLS_BACKEND: &str = "rustls";
 
 #[derive(Debug, Parser)]

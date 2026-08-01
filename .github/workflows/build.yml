@@ -71,7 +71,7 @@ jobs:
             ./${{ env.RELEASE_TAG }}-debug-win-${{ matrix.job.arch }}.zip.sha256
 
   linux:
-    name: ${{ matrix.job.target }} (${{ matrix.job.os }})
+    name: ${{ matrix.job.target }} / ${{ matrix.job.features }} (${{ matrix.job.os }})
     runs-on: ${{ matrix.job.os }}
     # Temporarily disable this action due to additional test is needed.
     # if: false
@@ -79,8 +79,10 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64 }
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64 }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64, features: native-tls, name: "" }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64, features: rustls, name: rustls }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64, features: native-tls, name: "" }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64, features: rustls, name: rustls }
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -92,18 +94,38 @@ jobs:
           targets: ${{ matrix.job.target }}
           components: "rustfmt"
 
+      - name: Install native-tls dependencies
+        if: matrix.job.features == 'native-tls'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libssl-dev pkg-config
+
       - name: Build
+        id: package
+        env:
+          BUILD_FEATURES: ${{ matrix.job.features }}
+          BUILD_NAME: ${{ matrix.job.name }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^[A-Za-z0-9._+-]+$ ]]; then
             echo "Release tag is not safe for artifact filenames: $RELEASE_TAG" >&2
             exit 1
           fi
-          package_name="${RELEASE_TAG}-debug-linux-${{ matrix.job.arch }}"
-          cargo build --locked --target "${{ matrix.job.target }}"
+          if [[ -n "$BUILD_NAME" && ! "$BUILD_NAME" =~ ^[A-Za-z0-9._+-]+$ ]]; then
+            echo "Build name is not safe for artifact filenames: $BUILD_NAME" >&2
+            exit 1
+          fi
+          name_segment=""
+          if [[ -n "$BUILD_NAME" ]]; then
+            name_segment="-$BUILD_NAME"
+          fi
+          package_name="${RELEASE_TAG}${name_segment}-debug-linux-${{ matrix.job.arch }}"
+          cargo build --locked --target "${{ matrix.job.target }}" --no-default-features --features "$BUILD_FEATURES"
           mkdir -p "$package_name"
           mv "./target/${{ matrix.job.target }}/debug/simple_test" "$package_name/simple_test"
           tar -czf "$package_name.tar.gz" "$package_name"
           sha256sum "$package_name.tar.gz" > "$package_name.tar.gz.sha256"
+          echo "archive=$package_name.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "checksum=$package_name.tar.gz.sha256" >> "$GITHUB_OUTPUT"
 
       - name: Publish Release
         uses: softprops/action-gh-release@v3
@@ -111,8 +133,8 @@ jobs:
           name: ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           files: |
-            ./${{ env.RELEASE_TAG }}-debug-linux-${{ matrix.job.arch }}.tar.gz
-            ./${{ env.RELEASE_TAG }}-debug-linux-${{ matrix.job.arch }}.tar.gz.sha256
+            ./${{ steps.package.outputs.archive }}
+            ./${{ steps.package.outputs.checksum }}
 
   macos:
     name: ${{ matrix.job.target }} (${{ matrix.job.os }})
