@@ -79,9 +79,9 @@ jobs:
       fail-fast: false
       matrix:
         job:
-          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64, features: native-tls, name: "" }
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64, features: native-tls, name: "native-tls" }
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04, arch: x86_64, features: rustls, name: rustls }
-          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64, features: native-tls, name: "" }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64, features: native-tls, name: "native-tls" }
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm, arch: aarch64, features: rustls, name: rustls }
     steps:
       - name: Checkout source code
