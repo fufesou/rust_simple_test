@@ -70,6 +70,8 @@ The package is independent of the repository's LDAP binary and native dependenci
 cargo +1.84 build --locked --release --manifest-path oidc-userinfo/Cargo.toml
 ```
 
-The `OIDC UserInfo diagnostic` workflow builds Windows, Linux and macOS binaries for x64 and ARM64. Relevant branch pushes, pull requests and manual workflow runs produce downloadable Actions artifacts. Pushing a tag matching `test-oidc-userinfo-*` publishes a prerelease with archives, this README and SHA-256 checksums. The existing LDAP workflow excludes these tags.
+The `OIDC UserInfo diagnostic` workflow builds Windows, Linux and macOS binaries for x64 and ARM64. Relevant branch pushes and pull requests produce downloadable Actions artifacts. To publish, run the workflow manually with a `tag` (default: `test-oidc-userinfo-latest`), or push a tag matching `test-oidc-userinfo-*`. The existing LDAP workflow excludes these tag pushes.
+
+Each platform uploads its archive, this README and SHA-256 checksum as soon as its own build succeeds. A missing prerelease/tag is created at the workflow's commit. An existing prerelease is reused and same-named assets are replaced; existing Git tags are not moved. During an update, platforms may contain different builds until all jobs finish. Each binary's report identifies its actual build commit.
 
 CI compiles tests first, runs them with a 60-second timeout, and builds with the committed lockfile. No provider credentials are needed for these checks.

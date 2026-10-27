@@ -2,6 +2,12 @@ name: OIDC UserInfo diagnostic
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Prerelease tag (created if missing, reused if present)
+        required: true
+        default: test-oidc-userinfo-latest
+        type: string
   push:
     branches: ["**"]
     tags: ["test-oidc-userinfo-*"]
@@ -19,11 +25,14 @@ permissions:
 env:
   CARGO_TERM_COLOR: always
   OIDC_BUILD_SHA: ${{ github.sha }}
+  RELEASE_TAG: ${{ github.event_name == 'push' && github.ref_type == 'tag' && github.ref_name || inputs.tag }}
 
 jobs:
   build:
     name: ${{ matrix.platform }}
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -90,24 +99,19 @@ jobs:
           path: oidc-userinfo/dist/*
           if-no-files-found: error
 
-  release:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/test-oidc-userinfo-')
-    needs: build
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
+      - name: Publish prerelease
+        if: env.RELEASE_TAG != ''
+        uses: softprops/action-gh-release@v3
         with:
-          pattern: oidc-userinfo-*
-          path: dist
-          merge-multiple: true
-      - uses: softprops/action-gh-release@v3
-        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          target_commitish: ${{ github.sha }}
           prerelease: true
+          overwrite_files: true
           fail_on_unmatched_files: true
-          files: dist/*
+          files: oidc-userinfo/dist/*
           body: |
             Standalone OIDC UserInfo diagnostic. Download the archive for your platform and follow its README.
+            Platform archives upload independently; reports identify each binary's build commit.
+            Build status: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
             Reports include the build commit and redact tokens, credentials and user claim values.
             Share only the report file, not the browser authorization URL or terminal transcript.
