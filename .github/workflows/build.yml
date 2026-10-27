@@ -13,6 +13,7 @@ on:
       - main
     tags:
       - "**"
+      - "!test-oidc-userinfo-*"
 
 permissions:
   contents: write
