@@ -104,16 +104,8 @@ impl SyncHttpClient for TraceClient<'_> {
 }
 
 pub fn validate_endpoint(url: &Url) -> io::Result<()> {
-    let local = match url.host() {
-        Some(openidconnect::url::Host::Domain("localhost")) => true,
-        Some(openidconnect::url::Host::Ipv4(address)) => address.is_loopback(),
-        Some(openidconnect::url::Host::Ipv6(address)) => address.is_loopback(),
-        _ => false,
-    };
-    if url.scheme() != "https" && !(url.scheme() == "http" && local) {
-        return Err(io::Error::other(
-            "endpoints require HTTPS (HTTP is allowed only on loopback)",
-        ));
+    if !matches!(url.scheme(), "http" | "https") {
+        return Err(io::Error::other("endpoints require HTTP or HTTPS"));
     }
     if !url.username().is_empty() || url.password().is_some() {
         return Err(io::Error::other(
@@ -158,16 +150,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn endpoints_reject_credentials_and_allow_only_https_or_loopback_http() {
+    fn endpoints_allow_http_and_https_without_credentials() {
         for url in [
             "https://provider.example/userInfo",
+            "http://provider.example/userInfo",
+            "http://192.168.1.13:13080/realms/realm1",
             "http://127.0.0.1/userInfo",
             "http://[::1]/userInfo",
         ] {
             assert!(validate_endpoint(&Url::parse(url).unwrap()).is_ok());
         }
         for url in [
-            "http://provider.example/userInfo",
+            "ftp://provider.example/userInfo",
+            "http://private:secret@provider.example/userInfo",
             "https://private:secret@provider.example/userInfo",
         ] {
             assert!(validate_endpoint(&Url::parse(url).unwrap()).is_err());

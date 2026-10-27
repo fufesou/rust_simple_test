@@ -43,7 +43,7 @@ To test the configured UserInfo override, run again with a new report filename a
 
 The override receives the access token, so use only your own trusted proxy. The report shows both the discovery endpoint and the selected endpoint, followed by the actual UserInfo request URL.
 
-Other options: `--scopes openid,profile,email` (default; add `groups` only if supported), `--port 18081`, `--timeout-secs 300`, `--secret-env OTHER_VARIABLE`. Run `--help` for details. HTTP is allowed only for loopback endpoints; other endpoints require HTTPS. HTTP redirects are rejected. Tokens use HTTP Basic client authentication when a secret is set. Private CA certificates and alternative client authentication methods are not configured by this tool.
+Other options: `--scopes openid,profile,email` (default; add `groups` only if supported), `--port 18081`, `--timeout-secs 300`, `--secret-env OTHER_VARIABLE`. Run `--help` for details. HTTP and HTTPS endpoints are supported. Use HTTP only on trusted test networks: credentials and tokens are transmitted without encryption. HTTP redirects are rejected. Tokens use HTTP Basic client authentication when a secret is set. Private CA certificates and alternative client authentication methods are not configured by this tool.
 
 ## What to send back
 
